@@ -57,7 +57,7 @@ float e_roll, e_pitch;                     // Error for the roll and pitch
 float kp_roll = 10;               // Kp for the roll
 float kp_pitch = 10;              // Kp for the pitch
 
-int max_milli_speed = 1900;       // Max value the motor should be allowed to run
+int max_milli_speed = 1600;       // Max value the motor should be allowed to run
 int min_milli_speed = 1100;       // Min value the motor should be allowed to run
 
 float speed_base_thrust = 1100;   // Base value the motors should have
@@ -75,6 +75,13 @@ int remaining_bytes;
 
 String indata_str;
 
+// ************* GENERAL ************* //
+
+void shutDownSetup(){
+  // Here, something in the setup failed. We do not want to start the drone.
+  Serial.println("Drone setup failed.");
+  while(1);
+}
 
 // ************* MPU6050 ************* //
 bool MPUReadAccel(){
@@ -248,15 +255,11 @@ void runPIDcontroller(){
 // ************* Bluetooth ************* //
 bool getCtrlSignal(){
 
-  byte byte_count = Serial_connection.available();
+  int byte_count = Serial_connection.available();
 
-  if(byte_count){
-    first_bytes=byte_count;
-    remaining_bytes=0;
-
-    if(first_bytes>=BUFFER_SIZE-1){       // Om tillräckligt många bytes har kommit
-      remaining_bytes=byte_count - (BUFFER_SIZE-1);
-      }
+  if(byte_count>=BUFFER_SIZE){                          // Om tillräckligt många bytes har kommit
+    remaining_bytes=byte_count - BUFFER_SIZE;       // Hur många bytes till övers som kommit
+    first_bytes = BUFFER_SIZE;                        // Hur många bytes vi vill läsa
 
     // Läs datan som blev skickad
     for(i=0;i<first_bytes;i++){
@@ -265,11 +268,12 @@ bool getCtrlSignal(){
       }
     inData[i]="\0";
     indata_str = String(inData);
-    return true;
-    }
-    else{
-      return false;
-    }
+
+    return true;                                      // Här har vi alltså fått tillräckligt många bytes
+  }
+  else{
+    return false;
+  }
 }
 
 void cleanBluetooth(){
@@ -281,49 +285,62 @@ void cleanBluetooth(){
 
 bool validateRecivedData(String data){
 
-  if(data.startsWith("1") && data.length() == 5){
-      return true;
-    }
-    else{
-      return false;
-    }
+  if (data.startsWith("FFF")){
+    // PANIC MODE
+    Serial.println("PANIC MODE ACTIVATED. Shutting down drone.");
+    speed_base_thrust = 0;
+    setMilliSpeed(1000, m1);
+    setMilliSpeed(1000, m2);
+    setMilliSpeed(1000, m3);
+    setMilliSpeed(1000, m4);
+    shutDownSetup();
   }
+  else{
+    // Normal data got
+    if(data.startsWith("1") && data.length() == 5){
+        return true;
+      }
+    else{
+        return false;
+      }
+  }
+}
 
 void updateBaseThrust(){
   if(getCtrlSignal()){
       if(validateRecivedData(indata_str)){
         bt = indata_str.toInt();
         if(bt >= min_milli_speed && bt <= max_milli_speed){
-            speed_base_thrust = indata_str.toInt();
-            //Serial.println(speed_base_thrust);
+          speed_base_thrust = bt;
         }
       }
       cleanBluetooth();
     }
 }
 
-void shutDownSetup(){
-  // Here, something in the setup failed. We do not want to start the drone.
-  Serial.println("Drone setup failed.");
-  while(1);
-}
-
 
 void setup(){
-  digitalWrite(12, HIGH);
+  //digitalWrite(12, HIGH);
   Serial.begin(57600);
+  Serial.println("-------- START SETUP --------");
+  Serial.println("Attach battery now");
+  delay(8000);
+
+  Serial.println("-------- SETUP MPU6050 --------");
+  boolean res_MPU = SetupMPU();
+  if(!res_MPU){
+    shutDownSetup();
+  }
+
+  Serial.println("-------- CALIBRATION --------");
+  calibrateGyro();
+  //calibrateAcc();
 
   // TODO: Fixa handskakning så vi vet att allt är korrekt uppsatt.
   // Typ handskakning mellan dator och python
   // Healthcheck på motorer
   // osv...
-
-  Serial.println("-------- START SETUP --------");
-
-
-  Serial.println("Setting up motors");
-  Serial.println("Attach battery now");
-  delay(8000);
+  Serial.println("-------- MOTORS --------");
 
   Serial.println("Arming m1");
   m1.attach(3, 1000, 2000);
@@ -347,17 +364,6 @@ void setup(){
   delay(3000);
 
   Wire.begin();
-
-  Serial.println("-------- SETUP MPU6050 --------");
-  boolean res_MPU = SetupMPU();
-  if(!res_MPU){
-    shutDownSetup();
-  }
-
-  Serial.println("-------- CALIBRATION --------");
-
-  calibrateGyro();
-  //calibrateAcc();
 
   delay(2000);
   Serial.println("-------- BLUETOOTH ---------");
@@ -395,7 +401,7 @@ void setup(){
 void loop(){
   loopTimer = micros();
 
-  //updateBaseThrust();
+  updateBaseThrust();
   ReadMPU();
   runPIDcontroller();
 
