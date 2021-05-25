@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include <Servo.h>
+#include <ServoTimer2.h>
 #include <Wire.h>
-#include "SoftwareSerial.h"
-
+#include <AltSoftSerial.h>
 
 #define STATUS_PIN                      13
 
@@ -27,7 +26,7 @@
 #define MPU1_I2C_ADDRESS                0b1101000
 
 //Set up servo motors
-Servo m1, m2, m3, m4;             // Motor 1 - 4
+ServoTimer2 m1, m2, m3, m4;             // Motor 1 - 4
 
 // Speed variables for the motors
 float speed_m1 = 0;               // Initial speed for motor 1
@@ -35,7 +34,7 @@ float speed_m2 = 0;               // Initial speed for motor 2
 float speed_m3 = 0;               // Initial speed for motor 3
 float speed_m4 = 0;               // Initial speed for motor 4
 
-long loopTimer = 0;               // Initial value for the loop timer
+unsigned long loopTimer = 0;               // Initial value for the loop timer
 
 // Setup sensor variables
 float gForceX, gForceY, gForceZ;  // Accelerometer sensor values
@@ -45,41 +44,46 @@ float calibX, calibY, calibZ;     // Gyroscope calibration values
 float tot_roll, tot_pitch;        // Angle calculating from the accelerometer
 float roll_acc, pitch_acc;        // Total estimation from complementery filter
 
-int looptime = 6700;//4000;              // Looptime in microseconds
-float dt = 0.000001*looptime;     // loop time in seconds
+unsigned long looptime = 6700; //4000              // Looptime in microseconds
+float dt = 0.000001*looptime;                     // loop time in seconds
 
-float ref_roll = 0;               // Reference value for the roll
+float ref_roll = 0;                           // Reference value for the roll
 float ref_pitch = 0;              // Reference value for the pitch
 
-float e_roll, e_pitch;                     // Error for the roll and pitch
+float e_roll, e_pitch, de_roll, de_pitch;        // Error for the roll and pitch
+float old_e_roll = 0;                  // Differentiated error for D-part in PID
+float old_e_pitch = 0;
 
 // PID-controller values
-float kp_roll = 10;               // Kp for the roll
-float kp_pitch = 10;              // Kp for the pitch
+float kp_roll = 0.008;//6;               // Kp for the roll
+float kp_pitch = 0.008;//6;              // Kp for the pitch
+float kd_roll = 0.075;//0.15 DENNA TAR JAG 25 % av ;//1;               // Kd for the roll 2 är nog ok
+float kd_pitch = 0.075;//0.15 DENNA TAR JAG 25 % av ;//1;              // Kd for the pitch 2 är nog ok
 
-int max_milli_speed = 1600;       // Max value the motor should be allowed to run
-int min_milli_speed = 1100;       // Min value the motor should be allowed to run
+unsigned int max_milli_speed = 1900;       // Max value the motor should be allowed to run
+unsigned int min_milli_speed = 1100;       // Min value the motor should be allowed to run
 
 float speed_base_thrust = 1100;   // Base value the motors should have
 
 // Variables for the bluetooth communication
-SoftwareSerial Serial_connection(10,11);
-#define BUFFER_SIZE 4
+AltSoftSerial altSerial;
+
+#define BUFFER_SIZE 10//4
 char inData[BUFFER_SIZE];
 char inChar=-1;
 int i=0;
-int bt;
 
-int first_bytes;
+unsigned long last_data;
+
+//int first_bytes;
 int remaining_bytes;
 
 String indata_str;
 
 // ************* GENERAL ************* //
-
-void shutDownSetup(){
+void shutDown(){
   // Here, something in the setup failed. We do not want to start the drone.
-  Serial.println("Drone setup failed.");
+  Serial.println("Drone failed.");
   while(1);
 }
 
@@ -89,7 +93,7 @@ bool MPUReadAccel(){
   Wire.write(MPU_ACCEL_READ_REG);
   Wire.endTransmission();
   Wire.requestFrom(MPU1_I2C_ADDRESS, MPU_ACCEL_READ_REG_SIZE);
-  long timeout = millis() + MPU_READ_TIMEOUT;
+  unsigned long timeout = millis() + MPU_READ_TIMEOUT;
   while(Wire.available() < MPU_ACCEL_READ_REG_SIZE && timeout < millis());
   if (timeout <= millis()) return false;
   gForceX = (long)(Wire.read() << 8 | Wire.read()) / MPU_ACCEL_READINGSCALE_8G;
@@ -103,13 +107,12 @@ bool MPUReadGyro(){
   Wire.write(MPU_GYRO_READ_REG);
   Wire.endTransmission();
   Wire.requestFrom(MPU1_I2C_ADDRESS, MPU_GYRO_READ_REG_SIZE);
-  long timeout = millis() + MPU_READ_TIMEOUT;
+  unsigned long timeout = millis() + MPU_READ_TIMEOUT;
   while(Wire.available() < MPU_ACCEL_READ_REG_SIZE && timeout < millis());
   if (timeout <= millis()) return false;
   rotX = (long)(Wire.read() << 8 | Wire.read()) / MPU_GYRO_READINGSCALE_500DEG;
   rotY = (long)(Wire.read() << 8 | Wire.read()) / MPU_GYRO_READINGSCALE_500DEG;
   rotZ = (long)(Wire.read() << 8 | Wire.read()) / MPU_GYRO_READINGSCALE_500DEG;
-
   return true;
 }
 
@@ -197,9 +200,6 @@ void complementaryFilter(){
   // Complementary filter
   tot_roll = 0.99*(tot_roll + ((rotX - calibX)*dt)) + 0.01*(roll_acc);
   tot_pitch = 0.99*(tot_pitch + ((rotY - calibY)*dt)) + 0.01*(pitch_acc);
-
-  //Serial.print("Pitch: "); Serial.println(tot_pitch);
-
 }
 
 bool ReadMPU(){
@@ -212,39 +212,58 @@ bool ReadMPU(){
 }
 
 // ************* Motorer ************* //
-void setMilliSpeed(int speed_in_micro, Servo motor){
+
+void setMilliSpeed(unsigned int speed_in_micro, ServoTimer2 motor){
+
   if(speed_in_micro < min_milli_speed){
     // Lower limit to never stop the motor
-    motor.writeMicroseconds(min_milli_speed);
+    motor.write(min_milli_speed);
   }
   else if(speed_in_micro > max_milli_speed){
     // Upper limit to avoid motor go cray-cray
-    motor.writeMicroseconds(max_milli_speed);
+    motor.write(max_milli_speed);
   }
   else {
-    motor.writeMicroseconds((int)speed_in_micro);
+    motor.write((int)speed_in_micro);
   }
 }
 
 // ************* PID ************* //
+
 void runPIDcontroller(){
 
   // Calculate the error
-
   e_roll = tot_roll - ref_roll;
   e_pitch = tot_pitch - ref_pitch;
 
-  //Serial.print("Pitch e: "); Serial.println(e_pitch);
-  //Serial.print("Roll e: "); Serial.println(e_roll);
+  // Calculating the differentiated error for D
+  de_roll = (e_roll - old_e_roll)/dt;
+  de_pitch = (e_pitch - old_e_pitch)/dt;
+
+  // Set the new e to old ones after using them in calculation
+  old_e_roll = e_roll;
+  old_e_pitch = e_pitch;
 
   //P-controll of roll and pitch
-  speed_m1 = speed_base_thrust - (e_roll * kp_roll) + (e_pitch * kp_pitch);
-  speed_m2 = speed_base_thrust + (e_roll * kp_roll) + (e_pitch * kp_pitch);
-  speed_m3 = speed_base_thrust - (e_roll * kp_roll) - (e_pitch * kp_pitch);
-  speed_m4 = speed_base_thrust + (e_roll * kp_roll) - (e_pitch * kp_pitch);
+  // OLD MPU below
+  //speed_m1 = speed_base_thrust - (e_roll * kp_roll) + (e_pitch * kp_pitch);
+  //speed_m2 = speed_base_thrust + (e_roll * kp_roll) + (e_pitch * kp_pitch);
+  //speed_m3 = speed_base_thrust - (e_roll * kp_roll) - (e_pitch * kp_pitch);
+  //speed_m4 = speed_base_thrust + (e_roll * kp_roll) - (e_pitch * kp_pitch);
 
+  //P-controll of roll and pitch
+  // New MPU where x and y is flipped. Y forward, X sideways and Z up.
+  speed_m1 = speed_base_thrust - (e_roll * kp_roll) - (e_pitch * kp_pitch);
+  speed_m2 = speed_base_thrust - (e_roll * kp_roll) + (e_pitch * kp_pitch);
+  speed_m3 = speed_base_thrust + (e_roll * kp_roll) - (e_pitch * kp_pitch);
+  speed_m4 = speed_base_thrust + (e_roll * kp_roll) + (e_pitch * kp_pitch);
 
-  //Serial.println(speed_m1);
+  //D-controll of roll and pitch
+  speed_m1 = speed_m1 - (de_roll * kd_roll) - (de_pitch * kd_pitch);
+  speed_m2 = speed_m2 - (de_roll * kd_roll) + (de_pitch * kd_pitch);
+  speed_m3 = speed_m3 + (de_roll * kd_roll) - (de_pitch * kd_pitch);
+  speed_m4 = speed_m4 + (de_roll * kd_roll) + (de_pitch * kd_pitch);
+
   // Set speeds according to the PID output
   setMilliSpeed(speed_m1, m1);
   setMilliSpeed(speed_m2, m2);
@@ -253,33 +272,34 @@ void runPIDcontroller(){
 }
 
 // ************* Bluetooth ************* //
+
 bool getCtrlSignal(){
 
-  int byte_count = Serial_connection.available();
+  int byte_count = altSerial.available();
 
   if(byte_count>=BUFFER_SIZE){                          // Om tillräckligt många bytes har kommit
-    remaining_bytes=byte_count - BUFFER_SIZE;       // Hur många bytes till övers som kommit
-    first_bytes = BUFFER_SIZE;                        // Hur många bytes vi vill läsa
+    remaining_bytes=byte_count - BUFFER_SIZE;           // Hur många bytes till övers som kommit
+    //first_bytes = BUFFER_SIZE;                        // Hur många bytes vi vill läsa
 
     // Läs datan som blev skickad
-    for(i=0;i<first_bytes;i++){
-      inChar=Serial_connection.read();
+    for(i=0;i<BUFFER_SIZE;i++){
+      inChar=altSerial.read();
       inData[i]=inChar;
       }
     inData[i]="\0";
     indata_str = String(inData);
 
-    return true;                                      // Här har vi alltså fått tillräckligt många bytes
+    return true;    // Här har vi alltså fått tillräckligt många bytes
   }
   else{
-    return false;
+    return false;   // Här har inte tillräckligt många kommit
   }
 }
 
 void cleanBluetooth(){
   // Dags att ta bort de bytes som var överflödiga.
     for(i=0;i<remaining_bytes;i++){
-      inChar=Serial_connection.read();    // Här läser vi bara de bytes som blev över. Tar bort dem så vi inte får buffer overrun.
+      inChar=altSerial.read();    // Här läser vi bara de bytes som blev över. Tar bort dem så vi inte får buffer overrun.
      }
   }
 
@@ -289,35 +309,45 @@ bool validateRecivedData(String data){
     // PANIC MODE
     Serial.println("PANIC MODE ACTIVATED. Shutting down drone.");
     speed_base_thrust = 0;
-    setMilliSpeed(1000, m1);
-    setMilliSpeed(1000, m2);
-    setMilliSpeed(1000, m3);
-    setMilliSpeed(1000, m4);
-    shutDownSetup();
+
+    m1.write(1000);
+    m2.write(1000);
+    m3.write(1000);
+    m4.write(1000);
+
+    shutDown();
+    return true; // Denna behövs egentligen inte men man får bort en varning.
   }
   else{
-    // Normal data got
+    return true;
+    /*
+    // Normal data got TODO: ÅTERIMPLEMENTERA DETTA!
     if(data.startsWith("1") && data.length() == 5){
         return true;
       }
     else{
         return false;
       }
+    */
   }
 }
 
 void updateBaseThrust(){
+  // If we have a new controll signal
   if(getCtrlSignal()){
+      // If the data is not corrupted
       if(validateRecivedData(indata_str)){
-        bt = indata_str.toInt();
-        if(bt >= min_milli_speed && bt <= max_milli_speed){
-          speed_base_thrust = bt;
-        }
+        // Update the global base thrust variable
+        speed_base_thrust = indata_str.substring(0,4).toInt();
+        ref_pitch = indata_str.substring(6,8).toFloat() - 30.0;
+        ref_roll = indata_str.substring(8,10).toFloat() - 30.0;
+        last_data = millis();
       }
       cleanBluetooth();
     }
 }
 
+// ************* Main Program ************* //
 
 void setup(){
   //digitalWrite(12, HIGH);
@@ -329,7 +359,7 @@ void setup(){
   Serial.println("-------- SETUP MPU6050 --------");
   boolean res_MPU = SetupMPU();
   if(!res_MPU){
-    shutDownSetup();
+    shutDown();
   }
 
   Serial.println("-------- CALIBRATION --------");
@@ -343,23 +373,23 @@ void setup(){
   Serial.println("-------- MOTORS --------");
 
   Serial.println("Arming m1");
-  m1.attach(3, 1000, 2000);
-  m1.writeMicroseconds(1000);
+  m1.attach(3);//, 1000, 2000);
+  m1.write(1000);
 
   delay(3000);
   Serial.println("Arming m2");
-  m2.attach(5, 1000, 2000);
-  m2.writeMicroseconds(1000);
+  m2.attach(5);
+  m2.write(1000);
 
   delay(3000);
   Serial.println("Arming m3");
-  m3.attach(9, 1000, 2000);
-  m3.writeMicroseconds(1000);
+  m3.attach(11);
+  m3.write(1000);
 
   delay(3000);
   Serial.println("Arming m4");
-  m4.attach(6, 1000, 2000);
-  m4.writeMicroseconds(1000);
+  m4.attach(6);
+  m4.write(1000);
 
   delay(3000);
 
@@ -368,42 +398,46 @@ void setup(){
   delay(2000);
   Serial.println("-------- BLUETOOTH ---------");
 
-  //Serial.begin(9600);
-  //delay(7000);
-  Serial_connection.begin(9600);
-  /*
-  // We must wait for the python program to start before setup is done.
-  boolean python_ready = false;
-  Serial.println("Start python now");
-  Serial.println("Waiting on python...");
-  while(!python_ready){
-    if(getCtrlSignal()){
-        if(indata_str == "0001\n"){
-          python_ready = true;
-          cleanBluetooth();
-        }
-      }
-      Serial.println(indata_str);
-      delay(1000);
-  }
-  */
+  altSerial.begin(9600);
 
   // Send to the python program that the drone is ready.
-  Serial_connection.println("start");
+  Serial.println("Sending start to python");
+  altSerial.println("start");
 
   tot_roll = 0;
   tot_pitch = 0;
 
   Serial.println("-------- SETUP DONE ---------");
   digitalWrite(12, LOW);
+  delay(5000);
 }
 
 void loop(){
-  loopTimer = micros();
+  // How To start:
+  // 1. Start bluetooth on the computer
+  // 2. Start python program
+  // 3. Start Drone by connecting the power
+  // 4. Wait for calibration to complete
+  // 5. Wait for the arming of the motors to complete
+  // 6. Fly away!
 
-  updateBaseThrust();
+  loopTimer = micros();
   ReadMPU();
+  Serial.print(tot_roll); Serial.print(" ");Serial.println(tot_pitch);
+  updateBaseThrust();
   runPIDcontroller();
+
+
+  if(millis() - last_data > 1000){
+    Serial.println("Connection to computer lost.");
+    speed_base_thrust = 0;
+    m1.write(1000);
+    m2.write(1000);
+    m3.write(1000);
+    m4.write(1000);
+
+    shutDown();
+  }
 
   if(micros() - loopTimer > looptime){
       Serial.print("WARNING!! TOO LONG MAIN LOOP!: "); Serial.println(micros() - looptime);
