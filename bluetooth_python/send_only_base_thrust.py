@@ -91,4 +91,4 @@ while True:
 
     #arduino_connection.send_string(str(msg_base_thrust))
 
-    time.sleep(0.004)
+    time.sleep(0.5)#0.004)
