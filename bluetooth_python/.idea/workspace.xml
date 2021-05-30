@@ -11,29 +11,29 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="mainGui.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="mainGui.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mainGui.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="160">
-              <caret line="106" column="82" lean-forward="false" selection-start-line="106" selection-start-column="82" selection-end-line="106" selection-end-column="82" />
+            <state relative-caret-position="557">
+              <caret line="157" column="32" lean-forward="true" selection-start-line="157" selection-start-column="32" selection-end-line="157" selection-end-column="32" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
                 <element signature="e#1446#2120#0" expanded="false" />
                 <element signature="e#2166#3254#0" expanded="false" />
                 <element signature="e#3299#3428#0" expanded="false" />
-                <element signature="e#3993#4038#0" expanded="false" />
-                <element signature="e#4083#4135#0" expanded="false" />
-                <element signature="e#4171#4578#0" expanded="false" />
-                <element signature="e#4626#4887#0" expanded="false" />
+                <element signature="e#4147#4192#0" expanded="false" />
+                <element signature="e#4237#4289#0" expanded="false" />
+                <element signature="e#4325#4732#0" expanded="false" />
+                <element signature="e#4780#5041#0" expanded="false" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="send_only_base_thrust.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="send_only_base_thrust.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/send_only_base_thrust.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-23">
+            <state relative-caret-position="-97">
               <caret line="31" column="38" lean-forward="true" selection-start-line="31" selection-start-column="38" selection-end-line="31" selection-end-column="38" />
               <folding />
             </state>
@@ -43,8 +43,8 @@
       <file leaf-file-name="Arduino_connecter.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Arduino_connecter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="158">
-              <caret line="26" column="45" lean-forward="true" selection-start-line="26" selection-start-column="45" selection-end-line="26" selection-end-column="45" />
+            <state relative-caret-position="193">
+              <caret line="13" column="73" lean-forward="true" selection-start-line="13" selection-start-column="73" selection-end-line="13" selection-end-column="73" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -83,10 +83,10 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/keyboard_listen.py" />
-        <option value="$PROJECT_DIR$/Arduino_connecter.py" />
         <option value="$PROJECT_DIR$/send_only_base_thrust.py" />
         <option value="$PROJECT_DIR$/test_joy.py" />
         <option value="$PROJECT_DIR$/osLib.py" />
+        <option value="$PROJECT_DIR$/Arduino_connecter.py" />
         <option value="$PROJECT_DIR$/mainGui.py" />
       </list>
     </option>
@@ -631,10 +631,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/send_only_base_thrust.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-97">
+          <caret line="31" column="38" lean-forward="true" selection-start-line="31" selection-start-column="38" selection-end-line="31" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Arduino_connecter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="158">
-          <caret line="26" column="45" lean-forward="true" selection-start-line="26" selection-start-column="45" selection-end-line="26" selection-end-column="45" />
+        <state relative-caret-position="193">
+          <caret line="13" column="73" lean-forward="true" selection-start-line="13" selection-start-column="73" selection-end-line="13" selection-end-column="73" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>
@@ -643,26 +651,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mainGui.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="106" column="82" lean-forward="false" selection-start-line="106" selection-start-column="82" selection-end-line="106" selection-end-column="82" />
+        <state relative-caret-position="557">
+          <caret line="157" column="32" lean-forward="true" selection-start-line="157" selection-start-column="32" selection-end-line="157" selection-end-column="32" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
             <element signature="e#1446#2120#0" expanded="false" />
             <element signature="e#2166#3254#0" expanded="false" />
             <element signature="e#3299#3428#0" expanded="false" />
-            <element signature="e#3993#4038#0" expanded="false" />
-            <element signature="e#4083#4135#0" expanded="false" />
-            <element signature="e#4171#4578#0" expanded="false" />
-            <element signature="e#4626#4887#0" expanded="false" />
+            <element signature="e#4147#4192#0" expanded="false" />
+            <element signature="e#4237#4289#0" expanded="false" />
+            <element signature="e#4325#4732#0" expanded="false" />
+            <element signature="e#4780#5041#0" expanded="false" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/send_only_base_thrust.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-23">
-          <caret line="31" column="38" lean-forward="true" selection-start-line="31" selection-start-column="38" selection-end-line="31" selection-end-column="38" />
-          <folding />
         </state>
       </provider>
     </entry>

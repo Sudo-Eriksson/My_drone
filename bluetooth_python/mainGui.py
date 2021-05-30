@@ -110,8 +110,11 @@ class Window(QMainWindow):
         else:
             self.connect_to_arduino()
 
-            conn_devs = self.os_lib.get_connected_devices()
-            self.write_to_msg_box("Connected to {}".format(conn_devs[0]))
+            if self.isConnectedToDrone:
+                conn_devs = self.os_lib.get_connected_devices()
+                self.write_to_msg_box("Connected to {}".format(conn_devs[0]))
+            else:
+                self.write_to_msg_box("Could not connect to drone. Check drone power.")
 
             self.update_gui()
 
@@ -147,8 +150,9 @@ class Window(QMainWindow):
         self.repaint()
 
     def connect_to_arduino(self):
-        self.arduino_connection.connect_to_arduino(port="/dev/tty.HC-06-DevB", nr=9600)
-        self.isConnectedToDrone = True
+        connection_res = self.arduino_connection.connect_to_arduino(port="/dev/tty.HC-06-DevB", nr=9600)
+        self.isConnectedToDrone = connection_res
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
