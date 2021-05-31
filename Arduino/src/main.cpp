@@ -287,7 +287,6 @@ bool waitForConnectSignal(){
       return false;
     }
   }
-
 }
 
 bool getCtrlSignal(){
@@ -387,13 +386,12 @@ void setup(){
   //calibrateAcc();
 
   // TODO: Fixa handskakning så vi vet att allt är korrekt uppsatt.
-  // Typ handskakning mellan dator och python
   // Healthcheck på motorer
   // osv...
   Serial.println("-------- MOTORS --------");
 
   Serial.println("Arming m1");
-  m1.attach(3);//, 1000, 2000);
+  m1.attach(3);
   m1.write(1000);
 
   delay(3000);
@@ -436,7 +434,6 @@ void loop(){
 
   loopTimer = micros();
   ReadMPU();
-  Serial.print(tot_roll); Serial.print(" ");Serial.println(tot_pitch);
   updateBaseThrust();
   runPIDcontroller();
 
