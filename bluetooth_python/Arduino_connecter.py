@@ -1,5 +1,6 @@
 import time
 import serial
+import struct
 
 
 class ArduinoBluetoothConnector():
@@ -14,10 +15,22 @@ class ArduinoBluetoothConnector():
         :param nr: The baud. Should be the same as in the Arduino program
         """
         try:
-            self.bt_con = serial.Serial(port, nr)
-            print("Connected to Arduino!")
+            # Connect to HC-module
+            self.bt_con = serial.Serial(port, nr, timeout=10)
             self.bt_con.flushInput()
-            return True
+
+            # Send message to drone to continue the setup
+            self.send_connect_msg()
+
+            # Wait for acc from drone
+            print("Waiting for acc...")
+            drone_acc = self.bt_con.read(10)
+            if drone_acc == b'1':
+                return True
+            else:
+                #TODO: Skicka abort meddelande till drönare här.
+                return False
+
         except serial.serialutil.SerialException:
             return False
 
@@ -40,6 +53,14 @@ class ArduinoBluetoothConnector():
         """
 
         self.bt_con.close()
+
+    def send_connect_msg(self):
+        msg = 1
+
+        msg_struct = struct.pack("b", msg)
+
+        self.bt_con.write(msg_struct)
+
 
 """
 

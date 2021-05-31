@@ -150,6 +150,7 @@ class Window(QMainWindow):
         self.repaint()
 
     def connect_to_arduino(self):
+        #TODO: Detta bör göras i en tråd.
         connection_res = self.arduino_connection.connect_to_arduino(port="/dev/tty.HC-06-DevB", nr=9600)
         self.isConnectedToDrone = connection_res
 

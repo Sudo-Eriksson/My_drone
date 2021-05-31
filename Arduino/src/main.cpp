@@ -273,11 +273,28 @@ void runPIDcontroller(){
 
 // ************* Bluetooth ************* //
 
+bool waitForConnectSignal(){
+
+  int byte_count = altSerial.available();
+
+  if(byte_count > 0){ 
+    if (altSerial.read() == 1){
+      Serial.println("Got connect msg. Sending acc back.");
+      altSerial.print("1");
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+
+}
+
 bool getCtrlSignal(){
 
   int byte_count = altSerial.available();
 
-  if(byte_count>=BUFFER_SIZE){                          // Om tillräckligt många bytes har kommit
+  if(byte_count=BUFFER_SIZE){                          // Om tillräckligt många bytes har kommit
     remaining_bytes=byte_count - BUFFER_SIZE;           // Hur många bytes till övers som kommit
     //first_bytes = BUFFER_SIZE;                        // Hur många bytes vi vill läsa
 
@@ -350,11 +367,14 @@ void updateBaseThrust(){
 // ************* Main Program ************* //
 
 void setup(){
-  //digitalWrite(12, HIGH);
-  Serial.begin(57600);
-  Serial.println("-------- START SETUP --------");
-  Serial.println("Attach battery now");
-  delay(8000);
+  Serial.begin(9600);
+  altSerial.begin(9600);
+  
+  // Wait for the computer to send permission to start setup.
+  Serial.println("Waiting for connect msg to start setup.");
+  while(!waitForConnectSignal()){
+    delay(100);
+  }
 
   Serial.println("-------- SETUP MPU6050 --------");
   boolean res_MPU = SetupMPU();
@@ -396,13 +416,6 @@ void setup(){
   Wire.begin();
 
   delay(2000);
-  Serial.println("-------- BLUETOOTH ---------");
-
-  altSerial.begin(9600);
-
-  // Send to the python program that the drone is ready.
-  Serial.println("Sending start to python");
-  altSerial.println("start");
 
   tot_roll = 0;
   tot_pitch = 0;
