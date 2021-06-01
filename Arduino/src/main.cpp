@@ -273,20 +273,22 @@ void runPIDcontroller(){
 
 // ************* Bluetooth ************* //
 
-bool waitForConnectSignal(){
+bool waitForSetupSignal(int continueByte){
 
   int byte_count = altSerial.available();
 
   if(byte_count > 0){ 
-    if (altSerial.read() == 1){
-      Serial.println("Got connect msg. Sending acc back.");
-      altSerial.print("1");
+    int byte_read = altSerial.read();
+    if (byte_read == continueByte){
+      Serial.print("Got setup msg "); Serial.print(String(byte_read)); Serial.println(". Sending acc back.");
+      altSerial.print(String(continueByte));
       return true;
     }
     else{
       return false;
     }
   }
+  return false;
 }
 
 bool getCtrlSignal(){
@@ -371,25 +373,21 @@ void setup(){
   
   // Wait for the computer to send permission to start setup.
   Serial.println("Waiting for connect msg to start setup.");
-  while(!waitForConnectSignal()){
-    delay(100);
-  }
+  while(!waitForSetupSignal(1)){ delay(100); }
 
-  Serial.println("-------- SETUP MPU6050 --------");
+  Serial.println("------- SETUP MPU6050 -------");
+  Serial.println("Waiting for setup and calibration msg of MPU6050.");
+  while(!waitForSetupSignal(2)){ delay(100); }
   boolean res_MPU = SetupMPU();
   if(!res_MPU){
     shutDown();
   }
-
   Serial.println("-------- CALIBRATION --------");
   calibrateGyro();
   //calibrateAcc();
-
-  // TODO: Fixa handskakning så vi vet att allt är korrekt uppsatt.
-  // Healthcheck på motorer
-  // osv...
+  
   Serial.println("-------- MOTORS --------");
-
+  while(!waitForSetupSignal(3)){ delay(100); }
   Serial.println("Arming m1");
   m1.attach(3);
   m1.write(1000);
@@ -420,7 +418,7 @@ void setup(){
 
   Serial.println("-------- SETUP DONE ---------");
   digitalWrite(12, LOW);
-  delay(5000);
+  while(!waitForSetupSignal(4)){ delay(100); }
 }
 
 void loop(){

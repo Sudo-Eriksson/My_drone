@@ -27,6 +27,7 @@ class Window(QMainWindow):
         # Initial Gui variables
         self.isBluetoothOn = self.os_lib.is_bt_On()
         self.isConnectedToDrone = False
+        self.isMpuStarted = False
         self.isArmed = False
         self.isAllowedToFly = False
 
@@ -51,6 +52,10 @@ class Window(QMainWindow):
         self.connectButton.clicked.connect(self._click_connect_to_drone)
         self.connectButton.setEnabled(self.isBluetoothOn)
 
+        self.startMpuButton = QPushButton('Start MPU')
+        self.startMpuButton.clicked.connect(self._click_start_mpu_setup)
+        self.startMpuButton.setEnabled(False)
+
         self.armButton = QPushButton('Arm Motors')
         self.armButton.clicked.connect(self._click_arm_motors)
         self.armButton.setEnabled(False)
@@ -60,8 +65,9 @@ class Window(QMainWindow):
         self.flyButton.setEnabled(False)
 
         self.mainGrid.addWidget(self.connectButton, 0, 0)
-        self.mainGrid.addWidget(self.armButton,     1, 0)
-        self.mainGrid.addWidget(self.flyButton,     2, 0)
+        self.mainGrid.addWidget(self.startMpuButton, 1, 0)
+        self.mainGrid.addWidget(self.armButton,     2, 0)
+        self.mainGrid.addWidget(self.flyButton,     3, 0)
 
     def _create_status_leds(self):
 
@@ -98,7 +104,7 @@ class Window(QMainWindow):
         self.msg_box = QPlainTextEdit()
         self.msg_box.setReadOnly(True)
 
-        self.mainGrid.addWidget(self.msg_box, 3, 0, 1, 3)
+        self.mainGrid.addWidget(self.msg_box, 4, 0, 1, 3)
 
     def _click_connect_to_drone(self):
         conn_devs = self.os_lib.get_connected_devices()
@@ -108,7 +114,9 @@ class Window(QMainWindow):
             for dev in conn_devs:
                 self.write_to_msg_box(dev)
         else:
-            self.connect_to_arduino()
+            self.write_to_msg_box("Connecting to drone...")
+
+            self.connect_to_drone()
 
             if self.isConnectedToDrone:
                 conn_devs = self.os_lib.get_connected_devices()
@@ -118,12 +126,34 @@ class Window(QMainWindow):
 
             self.update_gui()
 
+    def _click_start_mpu_setup(self):
+        self.isMpuStarted = self.arduino_connection.send_setup_msg(2)
+
+        if self.isMpuStarted:
+            self.write_to_msg_box("MPU6050 started. Performing calibration.")
+        else:
+            self.write_to_msg_box("Setup of MPU6050 failed. Please restart drone and gui.")
+
+        self.update_gui()
+
     def _click_arm_motors(self):
-        self.isArmed = True
+        self.isArmed = self.arduino_connection.send_setup_msg(3)
+
+        if self.isArmed:
+            self.write_to_msg_box("Motors are getting armed.")
+        else:
+            self.write_to_msg_box("Could not arm motors. Please restart drone and gui.")
+
         self.update_gui()
 
     def _click_start_flying(self):
-        self.isAllowedToFly = True
+        self.isAllowedToFly = self.arduino_connection.send_setup_msg(4)
+
+        if self.isAllowedToFly:
+            self.write_to_msg_box("Starting to fly!.")
+        else:
+            self.write_to_msg_box("Could not start flying. Please restart drone and gui.")
+
         self.update_gui()
 
     def update_gui(self):
@@ -134,8 +164,9 @@ class Window(QMainWindow):
 
         # Update buttons
         self.connectButton.setEnabled(self.isBluetoothOn)
-        self.armButton.setEnabled(self.isConnectedToDrone)
-        self.flyButton.setEnabled(self.isConnectedToDrone and self.isArmed)
+        self.startMpuButton.setEnabled(self.isConnectedToDrone)
+        self.armButton.setEnabled(self.isMpuStarted)
+        self.flyButton.setEnabled(self.isMpuStarted and self.isConnectedToDrone and self.isArmed)
 
         self.repaint()
 
@@ -149,10 +180,13 @@ class Window(QMainWindow):
 
         self.repaint()
 
-    def connect_to_arduino(self):
+    def connect_to_drone(self):
         #TODO: Detta bör göras i en tråd.
-        connection_res = self.arduino_connection.connect_to_arduino(port="/dev/tty.HC-06-DevB", nr=9600)
-        self.isConnectedToDrone = connection_res
+        connection_result = self.arduino_connection.connect_to_arduino(port="/dev/tty.HC-06-DevB", nr=9600)
+        if connection_result:
+            self.isConnectedToDrone = self.arduino_connection.send_setup_msg(1)
+        else:
+            self.isConnectedToDrone = False
 
 
 if __name__ == '__main__':
