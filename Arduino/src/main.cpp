@@ -411,10 +411,10 @@ void setup(){
   m4.attach(6);
   m4.write(1000);
 
+  delay(2000);
+
   Serial.println(". Sending acc back."); 
   altSerial.print(String(3));
-
-  delay(3000);
 
   Wire.begin();
 
@@ -425,7 +425,7 @@ void setup(){
 
   Serial.println("-------- SETUP DONE ---------");
   digitalWrite(12, LOW);
-  
+
   while(!waitForSetupSignal(4)){ delay(100); }
   Serial.println(". Sending acc back."); 
   altSerial.print(String(4));

@@ -16,7 +16,7 @@ class ArduinoBluetoothConnector():
         """
         try:
             # Connect to HC-module
-            self.bt_con = serial.Serial(port, nr, timeout=10)
+            self.bt_con = serial.Serial(port, nr, timeout=20)
             self.bt_con.flushInput()
             return True
 
@@ -51,9 +51,10 @@ class ArduinoBluetoothConnector():
 
         # Wait for acc from drone
         print("Waiting for acc...")
-        drone_acc = self.bt_con.read(20)
+        drone_acc = self.bt_con.read(1)
         print("Got acc: {}".format(drone_acc))
         if int(drone_acc) == byte_to_send:
+            print("acc ok!")
             return True
         else:
             # TODO: Skicka abort meddelande till drönare här.
