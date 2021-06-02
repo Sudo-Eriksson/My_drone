@@ -2,21 +2,19 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit
+from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit, QMenuBar
 from PyQt5.QtGui import QTextCursor
-from PyQt5.Qt import Qt
-from PyQt5 import QtCore
 from QLed import QLed
 from osLib import OsLib
 from Arduino_connecter import ArduinoBluetoothConnector
-
+from datetime import datetime
 
 class Window(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle('Drone Ctrl Gui')
-        self.setGeometry(100, 100, 350, 80)
+        self.setGeometry(100, 100, 450, 80)
         self.move(200, 150)
 
         # Init external libraries
@@ -109,10 +107,8 @@ class Window(QMainWindow):
     def _click_connect_to_drone(self):
         conn_devs = self.os_lib.get_connected_devices()
 
-        if len(conn_devs) > 1:
-            self.write_to_msg_box("One or more devices connected to computer. Please disconnect:")
-            for dev in conn_devs:
-                self.write_to_msg_box(dev)
+        if len(conn_devs) >= 1:
+            self.write_to_msg_box("One or more devices connected to computer. Please disconnect {}".format(conn_devs[0]))
         else:
             self.write_to_msg_box("Connecting to drone...")
 
@@ -176,7 +172,10 @@ class Window(QMainWindow):
         cursor.setPosition(0)
         self.msg_box.setTextCursor(cursor)
 
-        self.msg_box.insertPlainText("{}\n".format(text))
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+
+        self.msg_box.insertPlainText("{0} {1}\n".format(current_time, text))
 
         self.repaint()
 
