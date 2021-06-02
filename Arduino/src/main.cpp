@@ -280,8 +280,7 @@ bool waitForSetupSignal(int continueByte){
   if(byte_count > 0){ 
     int byte_read = altSerial.read();
     if (byte_read == continueByte){
-      Serial.print("Got setup msg "); Serial.print(String(byte_read)); Serial.println(". Sending acc back.");
-      altSerial.print(String(continueByte));
+      Serial.print("Got setup msg "); Serial.println(String(byte_read));
       return true;
     }
     else{
@@ -374,6 +373,8 @@ void setup(){
   // Wait for the computer to send permission to start setup.
   Serial.println("Waiting for connect msg to start setup.");
   while(!waitForSetupSignal(1)){ delay(100); }
+  Serial.println(". Sending acc back."); 
+  altSerial.print(String(1));
 
   Serial.println("------- SETUP MPU6050 -------");
   Serial.println("Waiting for setup and calibration msg of MPU6050.");
@@ -385,7 +386,10 @@ void setup(){
   Serial.println("-------- CALIBRATION --------");
   calibrateGyro();
   //calibrateAcc();
-  
+  Serial.println(". Sending acc back."); 
+  altSerial.print(String(2));
+
+
   Serial.println("-------- MOTORS --------");
   while(!waitForSetupSignal(3)){ delay(100); }
   Serial.println("Arming m1");
@@ -407,6 +411,9 @@ void setup(){
   m4.attach(6);
   m4.write(1000);
 
+  Serial.println(". Sending acc back."); 
+  altSerial.print(String(3));
+
   delay(3000);
 
   Wire.begin();
@@ -418,7 +425,10 @@ void setup(){
 
   Serial.println("-------- SETUP DONE ---------");
   digitalWrite(12, LOW);
+  
   while(!waitForSetupSignal(4)){ delay(100); }
+  Serial.println(". Sending acc back."); 
+  altSerial.print(String(4));
 }
 
 void loop(){
