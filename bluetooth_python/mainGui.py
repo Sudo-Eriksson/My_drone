@@ -1,13 +1,13 @@
 import sys
 
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit, QMenuBar
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit
+from PyQt5.QtGui import QTextCursor, QIcon
 from QLed import QLed
 from osLib import OsLib
 from Arduino_connecter import ArduinoBluetoothConnector
 from datetime import datetime
+
 
 class Window(QMainWindow):
     def __init__(self, parent=None):
@@ -20,7 +20,6 @@ class Window(QMainWindow):
         # Init external libraries
         self.os_lib = OsLib()
         self.arduino_connection = ArduinoBluetoothConnector()
-
 
         # Initial Gui variables
         self.isBluetoothOn = self.os_lib.is_bt_On()
@@ -190,6 +189,7 @@ class Window(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon('./icon.png'))
     win = Window()
     win.show()
     sys.exit(app.exec_())
