@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit
 from PyQt5.QtGui import QTextCursor, QIcon
+from PyQt5.QtCore import Qt
 from QLed import QLed
 from osLib import OsLib
 from Arduino_connecter import ArduinoBluetoothConnector
@@ -76,6 +77,12 @@ class Window(QMainWindow):
         self.connectionLed.value = self.isConnectedToDrone
         self.connectionLed.setFixedWidth(ledwidth)
 
+        self.mpuLed = QLed()
+        self.mpuLed.m_onColour = QLed.Green
+        self.mpuLed.m_offColour = QLed.Red
+        self.mpuLed.value = self.isMpuStarted
+        self.mpuLed.setFixedWidth(ledwidth)
+
         self.armLed = QLed()
         self.armLed.m_onColour = QLed.Green
         self.armLed.m_offColour = QLed.Red
@@ -88,14 +95,27 @@ class Window(QMainWindow):
         self.flyingLed.value = self.isAllowedToFly
         self.flyingLed.setFixedWidth(ledwidth)
 
-        self.mainGrid.addWidget(QLabel('Con. Status:'),     0, 1)
-        self.mainGrid.addWidget(self.connectionLed,         0, 2)
+        self.conn_label = QLabel('Connection Status:')
+        self.mpu_label = QLabel('MPU status:')
+        self.arm_label = QLabel('Arm Status:')
+        self.fly_label = QLabel('Allowed to fly:')
 
-        self.mainGrid.addWidget(QLabel('Arm Status:'),      1, 1)
-        self.mainGrid.addWidget(self.armLed,                1, 2)
+        self.conn_label.setAlignment(Qt.AlignRight)
+        self.mpu_label.setAlignment(Qt.AlignRight)
+        self.arm_label.setAlignment(Qt.AlignRight)
+        self.fly_label.setAlignment(Qt.AlignRight)
 
-        self.mainGrid.addWidget(QLabel('Allowed to fly:'),   2, 1)
-        self.mainGrid.addWidget(self.flyingLed,              2, 2)
+        self.mainGrid.addWidget(self.conn_label,    0, 1)
+        self.mainGrid.addWidget(self.connectionLed, 0, 2)
+
+        self.mainGrid.addWidget(self.mpu_label,     1, 1)
+        self.mainGrid.addWidget(self.mpuLed,        1, 2)
+
+        self.mainGrid.addWidget(self.arm_label,     2, 1)
+        self.mainGrid.addWidget(self.armLed,        2, 2)
+
+        self.mainGrid.addWidget(self.fly_label,     3, 1)
+        self.mainGrid.addWidget(self.flyingLed,     3, 2)
 
     def _create_message_box(self):
         self.msg_box = QPlainTextEdit()
@@ -154,6 +174,7 @@ class Window(QMainWindow):
     def update_gui(self):
         # Update leds
         self.connectionLed.value = self.isConnectedToDrone
+        self.mpuLed.value = self.isConnectedToDrone
         self.armLed.value = self.isArmed
         self.flyingLed.value = self.isAllowedToFly
 
@@ -175,8 +196,6 @@ class Window(QMainWindow):
         current_time = now.strftime("%H:%M:%S")
 
         self.msg_box.insertPlainText("{0} {1}\n".format(current_time, text))
-
-        self.repaint()
 
     def connect_to_drone(self):
         #TODO: Detta bör göras i en tråd.
