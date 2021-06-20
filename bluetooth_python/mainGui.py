@@ -36,6 +36,7 @@ class Window(QMainWindow):
         self.mainGrid = QGridLayout(self.centralWidget)
 
         self._create_init_buttons()
+        self._create_reset_button()
         self._create_status_leds()
         self._create_message_box()
         self._create_joystick()
@@ -67,6 +68,13 @@ class Window(QMainWindow):
         self.mainGrid.addWidget(self.startMpuButton, 1, 0)
         self.mainGrid.addWidget(self.armButton,     2, 0)
         self.mainGrid.addWidget(self.flyButton,     3, 0)
+
+    def _create_reset_button(self):
+        self.resetButton = QPushButton('Reset')
+        self.resetButton.clicked.connect(self._click_reset)
+        self.resetButton.setEnabled(True)
+
+        self.mainGrid.addWidget(self.resetButton, 4, 1)
 
     def _create_status_leds(self):
 
@@ -173,6 +181,22 @@ class Window(QMainWindow):
             self.write_to_msg_box("Starting to fly!.")
         else:
             self.write_to_msg_box("Could not start flying. Please restart drone and gui.")
+
+        self.update_gui()
+
+    def _click_reset(self):
+
+        successReset = self.arduino_connection.send_reset_msg()
+
+        if successReset:
+            self.arduino_connection.close_connection()
+
+            self.isConnectedToDrone = False
+            self.isConnectedToDrone = False
+            self.isArmed = False
+            self.isAllowedToFly = False
+        else:
+            print("No reset acc from drone.")
 
         self.update_gui()
 

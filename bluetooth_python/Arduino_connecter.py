@@ -60,6 +60,22 @@ class ArduinoBluetoothConnector():
             # TODO: Skicka abort meddelande till drönare här.
             return False
 
+    def send_reset_msg(self):
+
+        #TODO: Implement on arduino-side
+        msg = struct.pack("b", 127)
+        self.bt_con.write(msg)
+
+        print("Waiting for reset acc from drone")
+        drone_acc = self.bt_con.read(1)
+        if int(drone_acc) == 255:
+            print("acc ok")
+            return True
+        else:
+            print("RESET FAILED!")
+            return False
+
+
 
 """
 
