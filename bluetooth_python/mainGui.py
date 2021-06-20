@@ -1,13 +1,13 @@
 import sys
 
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QWidget, QPushButton, QGridLayout, QPlainTextEdit
 from PyQt5.QtGui import QTextCursor, QIcon
 from PyQt5.QtCore import Qt
 from QLed import QLed
 from osLib import OsLib
 from Arduino_connecter import ArduinoBluetoothConnector
 from datetime import datetime
+from joystickWidget import Joystick
 
 
 class Window(QMainWindow):
@@ -38,6 +38,7 @@ class Window(QMainWindow):
         self._create_init_buttons()
         self._create_status_leds()
         self._create_message_box()
+        self._create_joystick()
 
         self.setLayout(self.mainGrid)
 
@@ -117,11 +118,15 @@ class Window(QMainWindow):
         self.mainGrid.addWidget(self.fly_label,     3, 1)
         self.mainGrid.addWidget(self.flyingLed,     3, 2)
 
+    def _create_joystick(self):
+        self.joyStick = Joystick();
+        self.mainGrid.addWidget(self.joyStick, 4, 0)
+
     def _create_message_box(self):
         self.msg_box = QPlainTextEdit()
         self.msg_box.setReadOnly(True)
 
-        self.mainGrid.addWidget(self.msg_box, 4, 0, 1, 3)
+        self.mainGrid.addWidget(self.msg_box, 5, 0, 1, 3)
 
     def _click_connect_to_drone(self):
         conn_devs = self.os_lib.get_connected_devices()

@@ -6,11 +6,6 @@ import PyQt5.QtCore as QtCore
 import sys
 from enum import Enum
 
-class Direction(Enum):
-    Left = 0
-    Right = 1
-    Up = 2
-    Down = 3
 
 class Joystick(QWidget):
     def __init__(self, parent=None):
@@ -35,7 +30,6 @@ class Joystick(QWidget):
     def _center(self):
         return QPointF(self.width()/2, self.height()/2)
 
-
     def _boundJoystick(self, point):
         limitLine = QLineF(self._center(), point)
         if (limitLine.length() > self.__maxDistance):
@@ -58,7 +52,6 @@ class Joystick(QWidget):
             return (Direction.Down, distance)
         return (Direction.Right, distance)
 
-
     def mousePressEvent(self, ev):
         self.grabCenter = self._centerEllipse().contains(ev.pos())
         return super().mousePressEvent(ev)
@@ -75,6 +68,7 @@ class Joystick(QWidget):
             self.update()
         print(self.joystickDirection())
 
+"""
 if __name__ == '__main__':
     # Create main application window
     app = QApplication([])
@@ -100,3 +94,4 @@ if __name__ == '__main__':
     ## Start Qt event loop unless running in interactive mode or using pyside.
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
         QApplication.instance().exec_()
+"""
